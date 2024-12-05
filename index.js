@@ -14,7 +14,6 @@ app.use(express.json());
 
 // Endpoint to create a user and generate a chat token
 
-
 app.post('/create-user', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -28,7 +27,7 @@ app.post('/create-user', async (req, res) => {
         let userId = uuidv4();
 
         // Truncate userId to fit Stream Chat's 64-character limit (if needed)
-        userId = userId.slice(0, 64); // Ensure it does not exceed 64 characters
+        userId = userId.slice(0, 50); // Ensure it does not exceed 64 characters
 
         // Create a user in Stream Chat
         await chatClient.upsertUser({
