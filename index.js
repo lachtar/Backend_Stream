@@ -194,38 +194,56 @@ app.get('/channel-members/:channelId', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-
+//liste les channels de l'utilisateur 
 app.get('/user-channels/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
+        // Log the received userId to ensure it's being passed correctly
+        console.log('Received userId:', userId);
+
         if (!userId) {
+            console.error('User ID is missing');
             return res.status(400).json({ error: 'User ID is required' });
         }
 
         // Query all channels where the user is a member
+        console.log('Querying channels for user:', userId);
         const userChannels = await chatClient.queryChannels({
             members: { $in: [userId] }, // Channels where the user is a member
         });
 
+        // Log the result of the channel query
+        console.log('User channels fetched:', userChannels);
+
         // Format the channel data
-        const channelDetails = userChannels.map((channel) => ({
-            id: channel.id,
-            name: channel.data.name,
-            image: channel.data.image || null, // Optional channel image
-            lastMessage: channel.state.messages?.[channel.state.messages.length - 1]?.text || '',
-            members: channel.state.members.map((member) => ({
-                userId: member.user.id,
-                name: member.user.name,
-            })),
-        }));
+        const channelDetails = userChannels.map((channel) => {
+            console.log('Processing channel:', channel.id);
+
+            return {
+                id: channel.id,
+                name: channel.data.name,
+                image: channel.data.image || null, // Optional channel image
+                lastMessage: channel.state.messages?.[channel.state.messages.length - 1]?.text || '',
+                members: channel.state.members.map((member) => ({
+                    userId: member.user.id,
+                    name: member.user.name,
+                })),
+            };
+        });
+
+        // Log the formatted channel details
+        console.log('Formatted channel details:', channelDetails);
 
         res.json({ success: true, channels: channelDetails });
     } catch (error) {
+        // Log the error details for better debugging
         console.error('Error fetching user channels:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+
+        res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+
 
 
 app.listen(port, () => {
