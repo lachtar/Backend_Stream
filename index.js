@@ -44,7 +44,6 @@ app.post('/create-user', async (req, res) => {
 });
 
 // Endpoint to create a chat channel
-// Endpoint to create a chat channel
 app.post('/create-channel', async (req, res) => {
     try {
         const { channelName, userId, members } = req.body;
@@ -57,16 +56,17 @@ app.post('/create-channel', async (req, res) => {
         }
 
         let channel;
+
         if (members) {
             // Private channel (distinct channel)
-            channel = chatClient.channel('messaging', {
+            const distinctChannelId = `distinct_${members.sort().join('_')}`;
+            channel = chatClient.channel('messaging', distinctChannelId, {
                 members,
                 created_by_id: members[0], // Use the first member as the creator
             });
         } else {
             // Group/public channel
             const channelId = `channel_${Math.floor(10000 + Math.random() * 90000)}`;
-
             channel = chatClient.channel('messaging', channelId, {
                 name: channelName,
                 created_by_id: userId, // Specify the creator
@@ -77,17 +77,21 @@ app.post('/create-channel', async (req, res) => {
         // Create the channel
         await channel.create();
 
+        // Query the channel state to get the members
+        const channelState = await channel.query();
+
         res.json({ 
             success: true,
-            channelId: channel.id || `distinct_${members.join('_')}`,
+            channelId: channel.id,
             name: channelName || 'Distinct Channel',
-            members: channel.state.members.map(member => member.user_id),
+            members: Object.keys(channelState.members).map(memberId => memberId),
         });
     } catch (error) {
         console.error('Error creating channel:', error); // Log the full error
         res.status(500).json({ error: `Internal Server Error: ${error.message}` }); // Send error message to the client
     }
 });
+
 
 
 
