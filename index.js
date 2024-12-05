@@ -13,7 +13,7 @@ const chatClient = StreamChat.getInstance(apiKey, apiSecret);
 app.use(express.json());
 
 // Endpoint to create a user and generate a chat token
-// Assurez-vous d'importer uuidv4
+
 
 app.post('/create-user', async (req, res) => {
     try {
@@ -25,28 +25,78 @@ app.post('/create-user', async (req, res) => {
         }
 
         // Generate a unique user ID (and ensure it fits within the 64 character limit)
-        const userId = uuidv4();
+        let userId = uuidv4();
 
         // Truncate userId to fit Stream Chat's 64-character limit (if needed)
-        const validUserId = userId.slice(0, 64); // Ensure it does not exceed 64 characters
+        userId = userId.slice(0, 64); // Ensure it does not exceed 64 characters
 
         // Create a user in Stream Chat
         await chatClient.upsertUser({
-            id: validUserId, // Use the valid user ID
-            name: `User-${validUserId}`,
+            id: userId, // Use the valid user ID
+            name: `User-${userId}`,
             email,
             role: 'user',
         });
 
         // Generate a chat token for the user
-        const chatToken = chatClient.createToken(validUserId);
+        const chatToken = chatClient.createToken(userId);
 
-        res.json({ success: true, userId: validUserId, email, chatToken });
+        res.json({ success: true, userId, email, chatToken });
     } catch (error) {
         console.error('Error creating user:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+
+// Endpoint to create a chat channel
+app.post('/create-channel', async (req, res) => {
+    try {
+        const { channelName, userId, members } = req.body;
+
+        // Validate inputs
+        if (!members && (!userId || !channelName)) {
+            return res.status(400).json({ 
+                error: 'Provide either members for a private channel or userId and channelName for a group channel' 
+            });
+        }
+
+        let channel;
+
+        if (members) {
+            // Private channel (distinct channel)
+            const distinctChannelId = `distinct_${members.sort().join('_')}`;
+            channel = chatClient.channel('messaging', distinctChannelId.slice(0, 64), { // Truncate channelId to fit 64 chars
+                members,
+                created_by_id: members[0], // Use the first member as the creator
+            });
+        } else {
+            // Group/public channel
+            const channelId = `channel_${Math.floor(10000 + Math.random() * 90000)}`;
+            channel = chatClient.channel('messaging', channelId.slice(0, 64), { // Truncate to 64 chars
+                name: channelName,
+                created_by_id: userId, // Specify the creator
+                members: [userId], // Start with the creator as a member
+            });
+        }
+
+        // Create the channel
+        await channel.create();
+
+        // Query the channel state to get the members
+        const channelState = await channel.query();
+
+        res.json({ 
+            success: true,
+            channelId: channel.id,
+            name: channelName || 'Distinct Channel',
+            members: Object.keys(channelState.members).map(memberId => memberId),
+        });
+    } catch (error) {
+        console.error('Error creating channel:', error); // Log the full error
+        res.status(500).json({ error: `Internal Server Error: ${error.message}` }); // Send error message to the client
+    }
+});
+
 
 
 // Endpoint to create a chat channel
