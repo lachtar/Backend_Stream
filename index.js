@@ -194,7 +194,6 @@ app.get('/channel-members/:channelId', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-//liste les channels de l'utilisateur 
 app.get('/user-channels/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -207,10 +206,15 @@ app.get('/user-channels/:userId', async (req, res) => {
             return res.status(400).json({ error: 'User ID is required' });
         }
 
-        // Query all channels where the user is a member
+        // Query all channels where the user is a member using the filter
         console.log('Querying channels for user:', userId);
+
+        // Using the $in operator to filter channels that have the user in the members list
         const userChannels = await chatClient.queryChannels({
-            members: { $in: [userId] }, // Channels where the user is a member
+            members: { $in: [userId] }, // Filter channels where the user is a member
+        }, {
+            limit: 20,  // Limit the number of results (similar to your Flutter code)
+            sort: [{ last_message_at: -1 }], // Sort channels by last message timestamp (descending)
         });
 
         // Log the result of the channel query
@@ -246,6 +250,7 @@ app.get('/user-channels/:userId', async (req, res) => {
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+
 
 
 
