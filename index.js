@@ -194,6 +194,7 @@ app.get('/channel-members/:channelId', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+//liste les channels de l'utilisateur 
 app.get('/user-channels/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -206,15 +207,10 @@ app.get('/user-channels/:userId', async (req, res) => {
             return res.status(400).json({ error: 'User ID is required' });
         }
 
-        // Query all channels where the user is a member using the filter
+        // Query all channels where the user is a member
         console.log('Querying channels for user:', userId);
-
-        // Using the $in operator to filter channels that have the user in the members list
         const userChannels = await chatClient.queryChannels({
-            members: { $in: [userId] }, // Filter channels where the user is a member
-        }, {
-            limit: 20,  // Limit the number of results (similar to your Flutter code)
-            sort: [{ last_message_at: -1 }], // Sort channels by last message timestamp (descending)
+            members: { $in: [userId] }, // Channels where the user is a member
         });
 
         // Log the result of the channel query
@@ -243,11 +239,33 @@ app.get('/user-channels/:userId', async (req, res) => {
         console.log('Formatted channel details:', channelDetails);
 
         res.json({ success: true, channels: channelDetails });
-    } catch (error) {
+    } catch (error) {h
         // Log the error details for better debugging
         console.error('Error fetching user channels:', error);
 
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
+    }
+});
+// Endpoint to delete a channel
+app.delete('/delete-channel', async (req, res) => {
+    try {
+        const { channelId } = req.body;
+
+        // Validate inputs
+        if (!channelId) {
+            return res.status(400).json({ error: 'Channel ID is required' });
+        }
+
+        // Get the channel
+        const channel = chatClient.channel('messaging', channelId);
+
+        // Delete the channel
+        await channel.delete();
+
+        res.json({ success: true, message: `Channel ${channelId} deleted` });
+    } catch (error) {
+        console.error('Error deleting channel:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
