@@ -44,6 +44,7 @@ app.post('/create-user', async (req, res) => {
 });
 
 // Endpoint to create a chat channel
+// Endpoint to create a chat channel
 app.post('/create-channel', async (req, res) => {
     try {
         const { channelName, userId, members } = req.body;
@@ -60,6 +61,7 @@ app.post('/create-channel', async (req, res) => {
             // Private channel (distinct channel)
             channel = chatClient.channel('messaging', {
                 members,
+                created_by_id: members[0], // Use the first member as the creator
             });
         } else {
             // Group/public channel
@@ -67,8 +69,8 @@ app.post('/create-channel', async (req, res) => {
 
             channel = chatClient.channel('messaging', channelId, {
                 name: channelName,
-                created_by_id: userId,
-                members: [userId], // Start with creator
+                created_by_id: userId, // Specify the creator
+                members: [userId], // Start with the creator as a member
             });
         }
 
@@ -86,6 +88,7 @@ app.post('/create-channel', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 // Endpoint to dynamically add members to a group channel
 app.post('/add-members', async (req, res) => {
