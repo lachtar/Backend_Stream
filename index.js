@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const port = 3000;
+const { v4: uuidv4 } = require('uuid'); 
 
 const apiKey = 'hnut54rtgksj'; // Replace with your actual API key
 const apiSecret = 'nr5pc64bjjdn6cbkycwdpv3qye9fsef54puhv7jjm3wqzhxk2fdurfhrsyb4gadx'; // Replace with your actual API secret
@@ -13,6 +14,8 @@ const chatClient = StreamChat.getInstance(apiKey, apiSecret);
 app.use(express.json());
 
 // Endpoint to create a user and generate a chat token
+// Assurez-vous d'importer uuidv4
+
 app.post('/create-user', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -22,26 +25,30 @@ app.post('/create-user', async (req, res) => {
             return res.status(400).json({ error: 'Email and Password are required' });
         }
 
-        // Generate a unique user ID
+        // Generate a unique user ID (and ensure it fits within the 64 character limit)
         const userId = uuidv4();
+
+        // Truncate userId to fit Stream Chat's 64-character limit (if needed)
+        const validUserId = userId.slice(0, 64); // Ensure it does not exceed 64 characters
 
         // Create a user in Stream Chat
         await chatClient.upsertUser({
-            id: userId,
-            name: `User-${userId}`,
+            id: validUserId, // Use the valid user ID
+            name: `User-${validUserId}`,
             email,
             role: 'user',
         });
 
         // Generate a chat token for the user
-        const chatToken = chatClient.createToken(userId);
+        const chatToken = chatClient.createToken(validUserId);
 
-        res.json({ success: true, userId, email, chatToken });
+        res.json({ success: true, userId: validUserId, email, chatToken });
     } catch (error) {
         console.error('Error creating user:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
 
 // Endpoint to create a chat channel
 app.post('/create-channel', async (req, res) => {
