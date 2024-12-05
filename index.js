@@ -84,10 +84,11 @@ app.post('/create-channel', async (req, res) => {
             members: channel.state.members.map(member => member.user_id),
         });
     } catch (error) {
-        console.error('Error creating channel:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Error creating channel:', error); // Log the full error
+        res.status(500).json({ error: `Internal Server Error: ${error.message}` }); // Send error message to the client
     }
 });
+
 
 
 // Endpoint to dynamically add members to a group channel
