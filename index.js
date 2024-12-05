@@ -220,15 +220,18 @@ app.get('/user-channels/:userId', async (req, res) => {
         const channelDetails = userChannels.map((channel) => {
             console.log('Processing channel:', channel.id);
 
+            // Use Object.values() to get the members as an array
+            const members = Object.values(channel.state.members).map((member) => ({
+                userId: member.user.id,
+                name: member.user.name,
+            }));
+
             return {
                 id: channel.id,
                 name: channel.data.name,
                 image: channel.data.image || null, // Optional channel image
                 lastMessage: channel.state.messages?.[channel.state.messages.length - 1]?.text || '',
-                members: channel.state.members.map((member) => ({
-                    userId: member.user.id,
-                    name: member.user.name,
-                })),
+                members: members, // Now members is an array
             };
         });
 
