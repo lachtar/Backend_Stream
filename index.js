@@ -47,6 +47,32 @@ app.post('/create-user', async (req, res) => {
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+// Endpoint to fetch userId by phone number
+app.get('/fetch-user-by-phone/:phone', async (req, res) => {
+    try {
+        const { phone } = req.params;
+
+        if (!phone) {
+            return res.status(400).json({ error: 'Phone number is required' });
+        }
+
+        // Query users by phone number
+        const result = await chatClient.queryUsers({ phone });
+
+        // Check if any user matches the phone number
+        if (result.users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Return the userId of the first matching user
+        const user = result.users[0];
+        res.json({ success: true, userId: user.id, name: user.name });
+    } catch (error) {
+        console.error('Error fetching user by phone:', error);
+        res.status(500).json({ error: `Internal Server Error: ${error.message}` });
+    }
+});
+
 
 // Endpoint to create a chat channel
 app.post('/create-channel', async (req, res) => {
