@@ -16,10 +16,10 @@ app.use(express.json());
 
 app.post('/create-user', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password,mobile } = req.body;
 
         // Validate request body
-        if (!email || !password) {
+        if (!email || !password || !mobile) {
             return res.status(400).json({ error: 'Email and Password are required' });
         }
 
@@ -35,6 +35,7 @@ app.post('/create-user', async (req, res) => {
             name: `User-${userId}`,
             email,
             role: 'user',
+            phone:mobile,
         });
 
         // Generate a chat token for the user
@@ -80,6 +81,7 @@ app.post('/create-channel', async (req, res) => {
 
         // Create the channel
         await channel.create();
+
 
         // Query the channel state to get the members
         const channelState = await channel.query();
