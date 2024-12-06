@@ -50,7 +50,10 @@ app.post('/create-user', async (req, res) => {
 // Endpoint to fetch userId by phone number
 app.get('/fetch-user-by-phone/:phone', async (req, res) => {
     try {
-        const { phone } = req.params;
+        let { phone } = req.params;
+
+        // Nettoyer le numéro de téléphone en supprimant les espaces et les caractères non numériques
+        phone = phone.replace(/\s+/g, '').replace(/\D/g, '');
 
         if (!phone) {
             return res.status(400).json({ error: 'Phone number is required' });
@@ -72,6 +75,7 @@ app.get('/fetch-user-by-phone/:phone', async (req, res) => {
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+
 
 
 // Endpoint to create a chat channel
