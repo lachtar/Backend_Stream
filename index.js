@@ -75,36 +75,7 @@ app.get('/fetch-user-by-phone/:phone', async (req, res) => {
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
-// Endpoint to fetch phone number by userId
-app.get('/fetch-phone-by-userid/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
 
-        if (!userId) {
-            return res.status(400).json({ error: 'User ID is required' });
-        }
-
-        // Query users by userId
-        const result = await chatClient.queryUsers({ id: userId });
-
-        // Check if any user matches the userId
-        if (result.users.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        // Return the phone number of the first matching user
-        const user = result.users[0];
-
-        if (!user.phone) {
-            return res.status(404).json({ error: 'Phone number not found for this user' });
-        }
-
-        res.json({ success: true, phone: user.phone, name: user.name });
-    } catch (error) {
-        console.error('Error fetching phone by userId:', error);
-        res.status(500).json({ error: `Internal Server Error: ${error.message}` });
-    }
-});
 
 
 
@@ -233,81 +204,56 @@ app.post('/add-members', async (req, res) => {
     }
 });
 
-// Endpoint to fetch all members of a channel
-app.get('/channel-members/:channelId', async (req, res) => {
-    try {
-        const { channelId } = req.params;
-
-        if (!channelId) {
-            return res.status(400).json({ error: 'Channel ID is required' });
-        }
-
-        // Query the channel and get its members
-        const channel = chatClient.channel('messaging', channelId);
-        const members = Object.values(channel.state.members).map((member) => ({
-            userId: member.user.id,
-            name: member.user.name,
-            role: member.role,
-        }));
-
-        res.json({ success: true, members });
-    } catch (error) {
-        console.error('Error fetching channel members:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-//liste les channels de l'utilisateur 
+// retourne listeChannel de l'utilisateur
 app.get('/user-channels/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
-        // Log the received userId to ensure it's being passed correctly
-        console.log('Received userId:', userId);
-
         if (!userId) {
-            console.error('User ID is missing');
             return res.status(400).json({ error: 'User ID is required' });
         }
 
         // Query all channels where the user is a member
-        console.log('Querying channels for user:', userId);
         const userChannels = await chatClient.queryChannels({
             members: { $in: [userId] }, // Channels where the user is a member
         });
 
-        // Log the result of the channel query
-        console.log('User channels fetched:', userChannels);
-
         // Format the channel data
-        const channelDetails = userChannels.map((channel) => {
-            console.log('Processing channel:', channel.id);
+        const channelDetails = await Promise.all(
+            userChannels.map(async (channel) => {
+                // Get members as an array and enrich with phone numbers
+                const members = await Promise.all(
+                    Object.values(channel.state.members).map(async (member) => {
+                        // Fetch the user details to include the phone number
+                        const userDetails = await chatClient.queryUsers({ id: member.user.id });
 
-            // Use Object.values() to get the members as an array
-            const members = Object.values(channel.state.members).map((member) => ({
-                userId: member.user.id,
-                name: member.user.name,
-            }));
+                        // Extract phone and other details from the first user
+                        const user = userDetails.users[0];
+                        return {
+                            userId: user.id,
+                            name: user.name,
+                            phone: user.phone || null, // Return null if phone is missing
+                        };
+                    })
+                );
 
-            return {
-                id: channel.id,
-                name: channel.data.name,
-                image: channel.data.image || null, // Optional channel image
-                lastMessage: channel.state.messages?.[channel.state.messages.length - 1]?.text || '',
-                members: members, // Now members is an array
-            };
-        });
-
-        // Log the formatted channel details
-        console.log('Formatted channel details:', channelDetails);
+                return {
+                    id: channel.id,
+                    name: channel.data.name,
+                    image: channel.data.image || null, // Optional channel image
+                    lastMessage: channel.state.messages?.[channel.state.messages.length - 1]?.text || '',
+                    members: members, // Members now include phone numbers
+                };
+            })
+        );
 
         res.json({ success: true, channels: channelDetails });
-    } catch (error) {h
-        // Log the error details for better debugging
+    } catch (error) {
         console.error('Error fetching user channels:', error);
-
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+
 // Endpoint to delete a channel
 app.delete('/delete-channel', async (req, res) => {
     try {
