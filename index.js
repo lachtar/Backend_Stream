@@ -1,7 +1,7 @@
 const express = require('express');
 const { StreamChat } = require('stream-chat');
 const { v4: uuidv4 } = require('uuid');
-const chatClient = require('./chatClient'); // Votre instance de Stream Chat
+
 const UserModel = require('./models/User'); // Un modèle pour interagir avec la base de données
 
 const app = express();
