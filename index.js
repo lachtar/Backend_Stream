@@ -75,6 +75,36 @@ app.get('/fetch-user-by-phone/:phone', async (req, res) => {
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+// Endpoint to fetch phone number by userId
+app.get('/fetch-phone-by-userid/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        // Query users by userId
+        const result = await chatClient.queryUsers({ id: userId });
+
+        // Check if any user matches the userId
+        if (result.users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Return the phone number of the first matching user
+        const user = result.users[0];
+
+        if (!user.phone) {
+            return res.status(404).json({ error: 'Phone number not found for this user' });
+        }
+
+        res.json({ success: true, phone: user.phone, name: user.name });
+    } catch (error) {
+        console.error('Error fetching phone by userId:', error);
+        res.status(500).json({ error: `Internal Server Error: ${error.message}` });
+    }
+});
 
 
 
