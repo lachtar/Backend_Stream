@@ -232,7 +232,8 @@ app.get('/user-channels/:userId', async (req, res) => {
                         return {
                             userId: user.id,
                             name: user.name,
-                            phone: user.phone || null, // Return null if phone is missing
+                            phone: user.phone || null,
+                           
                         };
                     })
                 );
