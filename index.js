@@ -1,6 +1,8 @@
 const express = require('express');
 const { StreamChat } = require('stream-chat');
 const { v4: uuidv4 } = require('uuid');
+const chatClient = require('./chatClient'); // Votre instance de Stream Chat
+const UserModel = require('./models/User'); // Un modèle pour interagir avec la base de données
 
 const app = express();
 const port = 3000;
@@ -14,31 +16,46 @@ app.use(express.json());
 
 // Endpoint to create a user and generate a chat token
 
+
 app.post('/create-user', async (req, res) => {
     try {
-        const { email, password,mobile } = req.body;
+        const { email, password, mobile } = req.body;
 
         // Validate request body
         if (!email || !password || !mobile) {
-            return res.status(400).json({ error: 'Email and Password are required' });
+            return res.status(400).json({ error: 'Email, Password, and Mobile are required' });
         }
 
-        // Generate a unique user ID (and ensure it fits within the 64 character limit)
-        let userId = uuidv4();
+        // Vérifier si un utilisateur avec le même numéro existe
+        let user = await UserModel.findOne({ mobile });
 
-        // Truncate userId to fit Stream Chat's 64-character limit (if needed)
-        userId = userId.slice(0, 50); // Ensure it does not exceed 64 characters
+        let userId;
+        if (user) {
+            // Réutiliser le userId existant
+            userId = user.userId;
+        } else {
+            // Générer un nouvel userId pour un nouvel utilisateur
+            userId = uuidv4().slice(0, 50); // Assurez-vous que cela respecte la limite de 64 caractères
 
-        // Create a user in Stream Chat
+            // Sauvegarder l'utilisateur dans la base de données
+            user = new UserModel({
+                userId,
+                email,
+                mobile,
+            });
+            await user.save();
+        }
+
+        // Créer un utilisateur dans Stream Chat (si nécessaire)
         await chatClient.upsertUser({
-            id: userId, // Use the valid user ID
+            id: userId, // Utiliser l'userId unique
             name: `User-${userId}`,
             email,
             role: 'user',
-            phone:mobile,
+            phone: mobile,
         });
 
-        // Generate a chat token for the user
+        // Générer un chat token pour l'utilisateur
         const chatToken = chatClient.createToken(userId);
 
         res.json({ success: true, userId, email, chatToken });
@@ -47,6 +64,7 @@ app.post('/create-user', async (req, res) => {
         res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
 });
+
 // Endpoint to fetch userId by phone number
 app.get('/fetch-user-by-phone/:phone', async (req, res) => {
     try {
