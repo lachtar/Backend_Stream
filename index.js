@@ -1,11 +1,6 @@
 const express = require('express');
 const { StreamChat } = require('stream-chat');
 const { v4: uuidv4 } = require('uuid');
-const { Client } = require('pg');
-
-
-
-
 
 const app = express();
 
@@ -15,23 +10,8 @@ const apiKey = 'hnut54rtgksj'; // Replace with your actual API key
 const apiSecret = 'nr5pc64bjjdn6cbkycwdpv3qye9fsef54puhv7jjm3wqzhxk2fdurfhrsyb4gadx'; // Replace with your actual API secret
 
 const chatClient = StreamChat.getInstance(apiKey, apiSecret);
-const client = new Client({
-	user: 'becalio_user',
-	password: 'JRJGSehPp7I9MAqcAVP59BFOKRkcDM75',
-	host: 'dpg-ctbdbphu0jms73f7psm0-a',
-	port: 5432,
-	database: 'becalio',
-});
-client
-	.connect()
-	.then(() => {
-		console.log('Connected to PostgreSQL database');
-	})
-	.catch((err) => {
-		console.error('Error connecting to PostgreSQL database', err);
-	});
-app.use(express.json());
 
+app.use(express.json());
 
 app.post('/create-user', async (req, res) => {
     try {
