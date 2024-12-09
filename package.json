@@ -12,8 +12,10 @@
   "dependencies": {
     "@stream-io/node-sdk": "^0.4.4",
     "dotenv": "^16.4.5",
-    "express": "^4.21.1",
+    "express": "^4.21.2",
     "getstream": "^8.4.1",
+    "mongodb": "^6.11.0",
+    "mongoose": "^8.8.4",
     "stream-chat": "^8.45.1",
     "uuid": "^11.0.3"
   }
