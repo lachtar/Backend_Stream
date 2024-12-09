@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const { Client } = require('pg');
 
 
-const UserModel = require('./models/User');
+
 
 
 const app = express();
