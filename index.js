@@ -43,7 +43,7 @@ app.post('/create-user', async (req, res) => {
         }
 
         // Check if a user with the same mobile exists
-        const queryCheckUser = 'SELECT user_id FROM users WHERE mobile = $1';
+        const queryCheckUser = 'SELECT user_id FROM public.users WHERE mobile = $1';
         const resultCheckUser = await client.query(queryCheckUser, [mobile]);
 
         let userId;
@@ -55,7 +55,7 @@ app.post('/create-user', async (req, res) => {
             userId = uuidv4().slice(0, 50); // Truncate to 50 characters if needed
 
             const queryInsertUser = `
-                INSERT INTO users (user_id, email, mobile, password)
+                INSERT INTO public.users (user_id, email, mobile, password)
                 VALUES ($1, $2, $3, $4)
             `;
             await client.query(queryInsertUser, [userId, email, mobile, password]);
