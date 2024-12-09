@@ -33,53 +33,52 @@ client
 app.use(express.json());
 
 
-
-// Endpoint to create a user and generate a chat token
 app.post('/create-user', async (req, res) => {
     try {
-      const { email, password, mobile } = req.body;
-  
-      // Validate request body
-      if (!email || !password || !mobile) {
-        return res.status(400).json({ error: 'Email, Password, and Mobile are required' });
-      }
-  
-     
-  
-      // Check if a user with the same mobile exists
-      let user = await UserModel.findOne({ mobile });
-  
-      let userId;
-      if (user) {
-        userId = user.userId;
-      } else {
-        userId = uuidv4().slice(0, 50);
-  
-        user = new UserModel({
-          userId,
-          email,
-          mobile,
+        const { email, password, mobile } = req.body;
+
+        // Validate request body
+        if (!email || !password || !mobile) {
+            return res.status(400).json({ error: 'Email, Password, and Mobile are required' });
+        }
+
+        // Check if a user with the same mobile exists
+        const queryCheckUser = 'SELECT user_id FROM users WHERE mobile = $1';
+        const resultCheckUser = await client.query(queryCheckUser, [mobile]);
+
+        let userId;
+        if (resultCheckUser.rows.length > 0) {
+            // If user exists, retrieve userId
+            userId = resultCheckUser.rows[0].user_id;
+        } else {
+            // If user does not exist, create a new one
+            userId = uuidv4().slice(0, 50); // Truncate to 50 characters if needed
+
+            const queryInsertUser = `
+                INSERT INTO users (user_id, email, mobile, password)
+                VALUES ($1, $2, $3, $4)
+            `;
+            await client.query(queryInsertUser, [userId, email, mobile, password]);
+        }
+
+        // Create user in Stream Chat
+        await chatClient.upsertUser({
+            id: userId,
+            name: `User-${userId}`,
+            email,
+            role: 'user',
+            phone: mobile,
         });
-        await user.save();
-      }
-  
-      // Create user in Stream Chat
-      await chatClient.upsertUser({
-        id: userId,
-        name: `User-${userId}`,
-        email,
-        role: 'user',
-        phone: mobile,
-      });
-  
-      const chatToken = chatClient.createToken(userId);
-  
-      res.json({ success: true, userId, email, chatToken });
+
+        const chatToken = chatClient.createToken(userId);
+
+        res.json({ success: true, userId, email, chatToken });
     } catch (error) {
-      console.error('Error creating user:', error);
-      res.status(500).json({ error: `Internal Server Error: ${error.message}` });
+        console.error('Error creating user:', error);
+        res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
-  });
+});
+
   
 // Endpoint to fetch userId by phone number
 app.get('/fetch-user-by-phone/:phone', async (req, res) => {
