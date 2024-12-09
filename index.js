@@ -25,56 +25,55 @@ mongoose.connect('mongodb://localhost:27017/Bcalio',
 
 
 // Endpoint to create a user and generate a chat token
-
-
 app.post('/create-user', async (req, res) => {
     try {
-        const { email, password, mobile } = req.body;
-
-        // Validate request body
-        if (!email || !password || !mobile) {
-            return res.status(400).json({ error: 'Email, Password, and Mobile are required' });
-        }
-
-        // Vérifier si un utilisateur avec le même numéro existe
-        let user = await UserModel.findOne({ mobile });
-
-        let userId;
-        if (user) {
-            // Réutiliser le userId existant
-            userId = user.userId;
-        } else {
-            // Générer un nouvel userId pour un nouvel utilisateur
-            userId = uuidv4().slice(0, 50); // Assurez-vous que cela respecte la limite de 64 caractères
-
-            // Sauvegarder l'utilisateur dans la base de données
-            user = new UserModel({
-                userId,
-                email,
-                mobile,
-            });
-            await user.save();
-        }
-
-        // Créer un utilisateur dans Stream Chat (si nécessaire)
-        await chatClient.upsertUser({
-            id: userId, // Utiliser l'userId unique
-            name: `User-${userId}`,
-            email,
-            role: 'user',
-            phone: mobile,
+      const { email, password, mobile } = req.body;
+  
+      // Validate request body
+      if (!email || !password || !mobile) {
+        return res.status(400).json({ error: 'Email, Password, and Mobile are required' });
+      }
+  
+      // Verify database connection is active
+      if (mongoose.connection.readyState !== 1) {
+        throw new Error('Database is not connected');
+      }
+  
+      // Check if a user with the same mobile exists
+      let user = await UserModel.findOne({ mobile });
+  
+      let userId;
+      if (user) {
+        userId = user.userId;
+      } else {
+        userId = uuidv4().slice(0, 50);
+  
+        user = new UserModel({
+          userId,
+          email,
+          mobile,
         });
-
-        // Générer un chat token pour l'utilisateur
-        const chatToken = chatClient.createToken(userId);
-
-        res.json({ success: true, userId, email, chatToken });
+        await user.save();
+      }
+  
+      // Create user in Stream Chat
+      await chatClient.upsertUser({
+        id: userId,
+        name: `User-${userId}`,
+        email,
+        role: 'user',
+        phone: mobile,
+      });
+  
+      const chatToken = chatClient.createToken(userId);
+  
+      res.json({ success: true, userId, email, chatToken });
     } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).json({ error: `Internal Server Error: ${error.message}` });
+      console.error('Error creating user:', error);
+      res.status(500).json({ error: `Internal Server Error: ${error.message}` });
     }
-});
-
+  });
+  
 // Endpoint to fetch userId by phone number
 app.get('/fetch-user-by-phone/:phone', async (req, res) => {
     try {
