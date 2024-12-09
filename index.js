@@ -1,9 +1,10 @@
 const express = require('express');
 const { StreamChat } = require('stream-chat');
 const { v4: uuidv4 } = require('uuid');
+const { Client } = require('pg');
 
 
-const UserModel = require('./models/User'); // Un modèle pour interagir avec la base de données
+const UserModel = require('./models/User');
 const { default: mongoose } = require('mongoose');
 
 const app = express();
@@ -14,14 +15,23 @@ const apiKey = 'hnut54rtgksj'; // Replace with your actual API key
 const apiSecret = 'nr5pc64bjjdn6cbkycwdpv3qye9fsef54puhv7jjm3wqzhxk2fdurfhrsyb4gadx'; // Replace with your actual API secret
 
 const chatClient = StreamChat.getInstance(apiKey, apiSecret);
-
-app.use(express.json());
-mongoose.connect('mongodb://localhost:27017/Bcalio', 
-).then(() => {
-    console.log('MongoDB connected successfully');
-}).catch(err => {
-    console.error('MongoDB connection error:', err.message);
+const client = new Client({
+	user: 'becalio_user',
+	password: 'JRJGSehPp7I9MAqcAVP59BFOKRkcDM75',
+	host: 'dpg-ctbdbphu0jms73f7psm0-a',
+	port: 5432,
+	database: 'becalio',
 });
+client
+	.connect()
+	.then(() => {
+		console.log('Connected to PostgreSQL database');
+	})
+	.catch((err) => {
+		console.error('Error connecting to PostgreSQL database', err);
+	});
+app.use(express.json());
+
 
 
 // Endpoint to create a user and generate a chat token
