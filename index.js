@@ -5,7 +5,7 @@ const { Client } = require('pg');
 
 
 const UserModel = require('./models/User');
-const { default: mongoose } = require('mongoose');
+
 
 const app = express();
 
@@ -44,10 +44,7 @@ app.post('/create-user', async (req, res) => {
         return res.status(400).json({ error: 'Email, Password, and Mobile are required' });
       }
   
-      // Verify database connection is active
-      if (mongoose.connection.readyState !== 1) {
-        throw new Error('Database is not connected');
-      }
+     
   
       // Check if a user with the same mobile exists
       let user = await UserModel.findOne({ mobile });
